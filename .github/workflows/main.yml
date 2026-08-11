@@ -15,21 +15,40 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-    # --- NEW: PHASE 1 (LOCAL BUILD & RUN) ---
+    # --- PHASE 1: BUILD & SPIN UP ---
       - name: Build Docker Image Locally
         run: docker build -t local-test-image:latest .
 
       - name: Spin up Container for Testing
         run: docker run -d -p 8080:80 --name test-container local-test-image:latest
 
-      - name: Wait for server to boot
-        run: sleep 3
+      # --- DIAGNOSTIC & HEALTHCHECK STEP ---
+      - name: Wait for server readiness
+        run: |
+          echo "Checking running containers:"
+          docker ps -a
+          
+          echo "Waiting for http://localhost:8080 to respond..."
+          for i in {1..10}; do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "Server is up and accepting traffic!"
+              exit 0
+            fi
+            echo "Server not ready yet, retrying ($i/10)..."
+            sleep 2
+          done
 
-      # --- NEW: PHASE 2 (PERFORMANCE GATING) ---
+          echo "ERROR: Server failed to start on port 8080!"
+          echo "=== Container Logs ==="
+          docker logs test-container
+          exit 1
+
+      # --- PHASE 2: PERFORMANCE GATING ---
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
       - name: Run k6 Performance & Load Test
-        uses: grafana/k6-action@v0.3.1
-        with:
-          filename: k6-test.js
+        run: k6 run k6-test.js
 
       # If k6 fails (e.g., latency hits 300ms), the pipeline completely stops here.
       - name: Log in to GitHub Container Registry
