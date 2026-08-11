@@ -6,7 +6,30 @@ on:
       - main
 
 jobs:
+  # --- NEW: PHASE 0 (SECURITY GATING) ---
+  security-scan:
+    name: CodeQL SAST Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # Required for CodeQL to write alerts to your repo
+      contents: read
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          # We specify javascript because HTML/JS share the same scanning engine
+          languages: 'javascript' 
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # --- EXISTING: PHASE 1, 2, & 3 ---
   build-and-publish:
+    needs: security-scan # This is the lock! It waits for the security scan to pass.
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -15,7 +38,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-    # --- PHASE 1: BUILD & SPIN UP ---
+
+      # --- PHASE 1: BUILD & SPIN UP ---
       - name: Build Docker Image Locally
         run: docker build -t local-test-image:latest .
 
@@ -50,7 +74,7 @@ jobs:
       - name: Run k6 Performance & Load Test
         run: k6 run k6-test.js
 
-      # If k6 fails (e.g., latency hits 300ms), the pipeline completely stops here.
+      # --- PHASE 3: PUBLISH TO VAULT ---
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -58,7 +82,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
+      - name: Push Verified Image to Vault
         uses: docker/build-push-action@v5
         with:
           context: .
