@@ -15,7 +15,23 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+    # --- NEW: PHASE 1 (LOCAL BUILD & RUN) ---
+      - name: Build Docker Image Locally
+        run: docker build -t local-test-image:latest .
 
+      - name: Spin up Container for Testing
+        run: docker run -d -p 8080:80 --name test-container local-test-image:latest
+
+      - name: Wait for server to boot
+        run: sleep 3
+
+      # --- NEW: PHASE 2 (PERFORMANCE GATING) ---
+      - name: Run k6 Performance & Load Test
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: k6-test.js
+
+      # If k6 fails (e.g., latency hits 300ms), the pipeline completely stops here.
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
