@@ -6,7 +6,8 @@ services:
     ports:
       - "8080:8000"
     depends_on:
-      - database
+      database:
+        condition: service_healthy  # Tells Python to wait for the green light
 
   database:
     image: postgres:15-alpine
@@ -16,3 +17,9 @@ services:
       POSTGRES_DB: app_db
     ports:
       - "5433:5432"
+    healthcheck:
+      # Pings the DB every 5 seconds until it answers
+      test: ["CMD-SHELL", "pg_isready -U admin -d app_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
