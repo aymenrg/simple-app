@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8000"
+    depends_on:
+      - database
+
+  database:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: app_db
+    ports:
+      - "5433:5432"

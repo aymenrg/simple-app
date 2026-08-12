@@ -39,32 +39,30 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # --- PHASE 1: BUILD & SPIN UP ---
-      - name: Build Docker Image Locally
-        run: docker build -t local-test-image:latest .
-
-      - name: Spin up Container for Testing
-        run: docker run -d -p 8080:80 --name test-container local-test-image:latest
+      # --- NEW: PHASE 1 (MULTI-CONTAINER BUILD & SPIN UP) ---
+      - name: Spin up Architecture
+        run: docker compose up -d --build
 
       # --- DIAGNOSTIC & HEALTHCHECK STEP ---
-      - name: Wait for server readiness
+      - name: Wait for API and Database readiness
         run: |
           echo "Checking running containers:"
           docker ps -a
           
-          echo "Waiting for http://localhost:8080 to respond..."
-          for i in {1..10}; do
-            if curl -s http://localhost:8080 > /dev/null; then
-              echo "Server is up and accepting traffic!"
+          echo "Waiting for http://localhost:8080/docs to respond..."
+          # We give it 15 loops because PostgreSQL takes a few seconds to initialize
+          for i in {1..15}; do
+            if curl -s http://localhost:8080/docs > /dev/null; then
+              echo "API and Database are up and accepting traffic!"
               exit 0
             fi
-            echo "Server not ready yet, retrying ($i/10)..."
+            echo "Waiting for containers to boot ($i/15)..."
             sleep 2
           done
 
-          echo "ERROR: Server failed to start on port 8080!"
-          echo "=== Container Logs ==="
-          docker logs test-container
+          echo "ERROR: Server failed to start!"
+          echo "=== Multi-Container Logs ==="
+          docker compose logs
           exit 1
 
       # --- PHASE 2: PERFORMANCE GATING ---

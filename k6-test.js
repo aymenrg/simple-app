@@ -25,7 +25,7 @@ export const options = {
 
 export default function () {
   // Hit the local Docker container running inside the GitHub runner
-  const res = http.get('http://localhost:8080');
+  const res = http.get('http://localhost:8080/summary');
   
   // Verify the server actually responds with a healthy page
   check(res, {

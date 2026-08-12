@@ -1,8 +1,15 @@
-# Step 1: Use an official ultra-lightweight web server image
-FROM nginx:alpine
+# Use the official, lightweight Python image
+FROM python:3.11-slim
 
-# Step 2: Copy your HTML file into Nginx's default public web directory
-COPY index.html /usr/share/nginx/html/index.html
+# Set the working directory inside the container
+WORKDIR /app
 
-# Step 3: Inform Docker that the container listens on port 80
-EXPOSE 80
+# Copy the requirements and install them securely
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy your actual application code
+COPY . .
+
+# Start the FastAPI server using Uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
