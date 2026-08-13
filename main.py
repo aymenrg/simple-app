@@ -6,11 +6,17 @@ import pandas as pd
 from fastapi.responses import Response
 import pandas as pd
 import schemas
+from fastapi.responses import Response, FileResponse
 
 # This commands SQLAlchemy to physically create the tables in PostgreSQL
 database.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Data Processing API")
+
+@app.get("/")
+def serve_frontend():
+    """Serves the visual HTML user interface to the web browser."""
+    return FileResponse("index.html")
 
 # A helper function to open and close the database connection safely
 def get_db():
