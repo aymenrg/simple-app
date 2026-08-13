@@ -64,6 +64,12 @@ jobs:
           echo "=== Multi-Container Logs ==="
           docker compose logs
           exit 1
+      
+      # --- NEW: AUTOMATED UNIT TESTS ---
+      - name: Run Pytest Security Checks
+        run: |
+          echo "Running Pydantic validation tests..."
+          docker exec simple-app-api-1 pytest
 
       # --- PHASE 2: PERFORMANCE GATING ---
       - name: Install k6

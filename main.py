@@ -5,6 +5,7 @@ import database
 import pandas as pd
 from fastapi.responses import Response
 import pandas as pd
+import schemas
 
 # This commands SQLAlchemy to physically create the tables in PostgreSQL
 database.Base.metadata.create_all(bind=database.engine)
@@ -20,11 +21,13 @@ def get_db():
         db.close()
 
 @app.post("/records")
-def add_record(status: str, metric: float, db: Session = Depends(get_db)):
-    """Allows users to actively modify the live database."""
-    new_record = database.Record(status=status, metric=metric)
+def add_record(record: schemas.RecordCreate, db: Session = Depends(get_db)):
+    """Allows users to actively modify the live database securely."""
+    
+    new_record = database.Record(status=record.status, metric=record.metric)
     db.add(new_record)
     db.commit()
+    
     return {"message": "Database modified successfully"}
 
 
