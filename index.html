@@ -4,127 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Processing Engine</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; padding: 40px 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { color: #333; margin-top: 0; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
-        button { border: none; padding: 12px 20px; cursor: pointer; border-radius: 4px; font-size: 16px; font-weight: bold; margin-top: 10px; margin-right: 10px; transition: 0.2s; }
-        
-        .btn-submit { background-color: #007bff; color: white; }
-        .btn-submit:hover { background-color: #0056b3; }
-        
-        .btn-success { background-color: #28a745; color: white; }
-        .btn-success:hover { background-color: #218838; }
-        
-        .btn-export { background-color: #17a2b8; color: white; }
-        .btn-export:hover { background-color: #117a8b; }
-        
-        .dashboard { background-color: #e9ecef; padding: 20px; margin-top: 25px; border-radius: 4px; border-left: 4px solid #28a745; }
-        .dashboard p { margin: 10px 0; font-size: 16px; }
-        .msg { font-size: 0.9em; margin-top: 10px; font-weight: bold; }
-	/* --- Mobile Responsiveness --- */
-        @media (max-width: 600px) {
-            body { 
-                padding: 15px 10px; 
-            }
-            .container { 
-                padding: 20px; 
-            }
-            button { 
-                width: 100%; /* Make buttons full width on mobile */
-                margin-right: 0; 
-                margin-bottom: 10px; 
-            }
-        }
-    </style>
+    <!-- Link to external CSS -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+    <!-- --- SECURITY: LOGIN SECTION --- -->
+    <div class="login-container">
+        <h3>Client Login</h3>
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Username" class="responsive-input">
+            <input type="password" id="password" placeholder="Password" class="responsive-input">
+        </div>
+        <button onclick="loginUser()" class="responsive-btn">Log In</button>
+        <p id="loginStatus" class="status-msg"></p>
+    </div>
+
+    <!-- --- APP: DATA INJECTION --- -->
+    <div class="app-container">
         <h2>Inject Data</h2>
-        <div class="form-group">
+        <div class="input-group">
             <label>Status (Letters only):</label>
-            <input type="text" id="statusInput" placeholder="e.g. processed">
+            <input type="text" id="statusInput" class="responsive-input" placeholder="e.g. processed">
         </div>
-        <div class="form-group">
+        <div class="input-group">
             <label>Metric (Positive number):</label>
-            <input type="number" id="metricInput" placeholder="e.g. 150.5">
+            <input type="number" id="metricInput" class="responsive-input" placeholder="e.g. 150.5">
         </div>
-        <button class="btn-submit" onclick="submitData()">Submit Data</button>
-        <div id="message" class="msg"></div>
+        <button class="responsive-btn btn-submit" onclick="submitData()">Submit Data</button>
+        <div id="message" class="status-msg"></div>
 
         <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
+        <!-- --- APP: DASHBOARD --- -->
         <h2>Dashboard & Export</h2>
-        <button class="btn-success" onclick="loadSummary()">Load Live Summary</button>
-        <button class="btn-export" onclick="exportCSV()">Download Clean CSV</button>
+        <div class="button-group">
+            <button class="responsive-btn btn-success" onclick="loadSummary()">Load Live Summary</button>
+            <button class="responsive-btn btn-export" onclick="exportCSV()">Download Clean CSV</button>
+        </div>
 
         <div class="dashboard" id="summaryBox">
             <p style="color: #666; font-style: italic;">Click "Load Live Summary" to view calculated data.</p>
         </div>
     </div>
 
-    <script>
-        // 1. Send data to the Pydantic-protected API
-        async function submitData() {
-            const status = document.getElementById('statusInput').value;
-            const metric = parseFloat(document.getElementById('metricInput').value);
-            const msgBox = document.getElementById('message');
-
-            msgBox.style.color = "blue";
-            msgBox.innerText = "Sending data to server...";
-
-            try {
-                const response = await fetch('/records', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: status, metric: metric })
-                });
-
-                if (response.ok) {
-                    msgBox.style.color = "green";
-                    msgBox.innerText = "Success: Record injected into database!";
-                    document.getElementById('statusInput').value = '';
-                    document.getElementById('metricInput').value = '';
-                } else {
-                    msgBox.style.color = "red";
-                    msgBox.innerText = "Error: Blocked by Pydantic Validation (Check your inputs)";
-                }
-            } catch (error) {
-                msgBox.style.color = "red";
-                msgBox.innerText = "Critical Error: Cannot reach the backend engine.";
-            }
-        }
-
-        // 2. Fetch the Pandas calculations from the backend
-        async function loadSummary() {
-            const box = document.getElementById('summaryBox');
-            box.innerHTML = "<p>Crunching numbers...</p>";
-
-            try {
-                const response = await fetch('/summary');
-                const data = await response.json();
-                
-                if (data.message) {
-                    box.innerHTML = `<p>${data.message}</p>`;
-                } else {
-                    box.innerHTML = `
-                        <p><strong>Total Records:</strong> ${data.total_records}</p>
-                        <p><strong>Sum of Metrics:</strong> ${data.total_metric_sum}</p>
-                        <p><strong>Average Metric:</strong> ${data.average_metric.toFixed(2)}</p>
-                    `;
-                }
-            } catch (error) {
-                box.innerHTML = "<p style='color:red;'>Failed to load summary from database.</p>";
-            }
-        }
-
-        // 3. Trigger the browser to download the file
-        function exportCSV() {
-            window.location.href = '/export';
-        }
-    </script>
+    <!-- Link to external JavaScript -->
+    <script src="app.js"></script>
 </body>
 </html>
