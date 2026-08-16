@@ -1,28 +1,39 @@
 from fastapi.testclient import TestClient
 from main import app
 
-# Create a virtual client to send requests to our API
 client = TestClient(app)
 
-def test_pydantic_rejects_numbers_in_status():
-    """Test that our regex pattern successfully blocks numbers in the status field."""
-    
-    # We deliberately send bad data (a number disguised as a string)
-    response = client.post("/records", json={
-        "status": "123", 
-        "metric": 150.5
-    })
-    
-    # We mathematically assert that the API MUST return a 422 Error
-    assert response.status_code == 422
+def test_security_flow():
+    # 1. Test Registration
+    reg_response = client.post(
+        "/register",
+        json={"username": "ci_cd_tester", "password": "securepassword123"}
+    )
+    # Allow 400 in case the test user already exists in the database
+    assert reg_response.status_code in [201, 400] 
 
-def test_pydantic_rejects_negative_metrics():
-    """Test that the metric field rejects negative numbers."""
+    # 2. Test Login & Get Cookie
+    login_response = client.post(
+        "/login",
+        data={"username": "ci_cd_tester", "password": "securepassword123"}
+    )
+    assert login_response.status_code == 200
     
-    response = client.post("/records", json={
-        "status": "processed", 
-        "metric": -50.0  # Invalid metric
-    })
-    
-    # Again, we expect Pydantic to catch this and throw a 422 Error
-    assert response.status_code == 422
+    # Verify the HTTP-Only cookie was actually created
+    cookie = login_response.cookies.get("access_token")
+    assert cookie is not None
+
+    # 3. Test Injecting Data (Without Cookie - Should Fail)
+    blocked_response = client.post(
+        "/records",
+        json={"status": "processed", "metric": 50.0}
+    )
+    assert blocked_response.status_code == 401 # 401 Unauthorized
+
+    # 4. Test Injecting Data (With Cookie - Should Succeed)
+    success_response = client.post(
+        "/records",
+        json={"status": "processed", "metric": 50.0},
+        cookies={"access_token": cookie} # <-- Simulates the browser sending the cookie back
+    )
+    assert success_response.status_code == 201

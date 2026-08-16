@@ -6,3 +6,7 @@ sqlalchemy
 pydantic
 pytest
 httpx
+passlib
+bcrypt==3.2.2
+PyJWT
+python-multipart

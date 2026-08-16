@@ -12,9 +12,9 @@ services:
   database:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: admin
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123
-      POSTGRES_DB: app_db
+      POSTGRES_DB: postgres
     ports:
       - "5433:5432"
     healthcheck:

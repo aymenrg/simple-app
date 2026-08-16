@@ -15,7 +15,13 @@
             <input type="text" id="username" placeholder="Username" class="responsive-input">
             <input type="password" id="password" placeholder="Password" class="responsive-input">
         </div>
-        <button onclick="loginUser()" class="responsive-btn">Log In</button>
+        
+        <!-- NEW: Button Group for Login and Register -->
+        <div class="button-group">
+            <button onclick="loginUser()" class="responsive-btn">Log In</button>
+            <button onclick="registerUser()" class="responsive-btn btn-secondary">Register New User</button>
+        </div>
+        
         <p id="loginStatus" class="status-msg"></p>
     </div>
 
