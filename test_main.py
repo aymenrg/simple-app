@@ -24,6 +24,7 @@ def test_security_flow():
     assert cookie is not None
 
     # 3. Test Injecting Data (Without Cookie - Should Fail)
+    client.cookies.clear()
     blocked_response = client.post(
         "/records",
         json={"status": "processed", "metric": 50.0}
